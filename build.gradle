@@ -13,6 +13,10 @@ subprojects {
     java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
     repositories { mavenCentral() }
 
+    // Spring Boot 3.3.5 BOM 의 Testcontainers 1.19.8 은 오래된 Docker API 버전을 써서
+    // Docker Engine 29 이상(최소 API 상향)에서 "Could not find a valid Docker environment" 로 실패한다
+    ext['testcontainers.version'] = '1.21.4'
+
     dependencies {
         implementation 'org.springframework.boot:spring-boot-starter-web'
         implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -25,6 +29,8 @@ subprojects {
         testImplementation 'org.springframework.boot:spring-boot-testcontainers'
         testImplementation 'org.testcontainers:junit-jupiter'
         testImplementation 'org.testcontainers:kafka'
+        // Gradle 9 부터 JUnit Platform launcher 를 자동으로 넣어주지 않는다 → 없으면 테스트 실행기 자체가 시작되지 않음
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
     tasks.named('test') { useJUnitPlatform() }
 }
