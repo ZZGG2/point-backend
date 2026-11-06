@@ -1,5 +1,7 @@
 package com.pointplatform.monolith.point.infra;
 
+import com.pointplatform.monolith.point.application.LedgerActivity;
+import com.pointplatform.monolith.point.application.PointStats;
 import com.pointplatform.monolith.point.domain.LedgerEntry;
 import com.pointplatform.monolith.point.domain.LedgerType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -54,6 +56,54 @@ public class PointRepository {
     public void updateBalance(long userId, long balance) {
         jdbc.update("UPDATE point.point_wallet SET balance = ?, version = version + 1, updated_at = now() WHERE user_id = ?",
                 balance, userId);
+    }
+
+    // ---- 운영 대시보드용 읽기 전용 집계 (/api/system/ledger) ----
+
+    public long countWallets() {
+        Long n = jdbc.queryForObject("SELECT count(*) FROM point.point_wallet", Long.class);
+        return n == null ? 0L : n;
+    }
+
+    public long sumBalances() {
+        Long n = jdbc.queryForObject("SELECT COALESCE(sum(balance), 0) FROM point.point_wallet", Long.class);
+        return n == null ? 0L : n;
+    }
+
+    public long countLedger() {
+        Long n = jdbc.queryForObject("SELECT count(*) FROM point.point_ledger", Long.class);
+        return n == null ? 0L : n;
+    }
+
+    public List<PointStats.SourceSummary> summarizeBySource() {
+        return jdbc.query("""
+                SELECT source, type, count(*) AS cnt, COALESCE(sum(amount), 0) AS total
+                FROM point.point_ledger GROUP BY source, type ORDER BY source, type
+                """, (rs, i) -> new PointStats.SourceSummary(
+                rs.getString("source"), rs.getString("type"), rs.getLong("cnt"), rs.getLong("total")));
+    }
+
+    public Optional<OffsetDateTime> findLastCreatedAtBySource(String source) {
+        List<OffsetDateTime> rows = jdbc.query(
+                "SELECT max(created_at) AS last_at FROM point.point_ledger WHERE source = ?",
+                (rs, i) -> rs.getObject("last_at", OffsetDateTime.class), source);
+        return rows.stream().filter(java.util.Objects::nonNull).findFirst();
+    }
+
+    /** 전체 사용자 최근 원장 (PK 역순 → 인덱스 사용) */
+    public List<LedgerActivity> findRecentActivity(int limit) {
+        return jdbc.query("""
+                SELECT id, user_id, type, amount, balance_after, source, reference_id, created_at
+                FROM point.point_ledger ORDER BY id DESC LIMIT ?
+                """, (rs, i) -> new LedgerActivity(
+                rs.getLong("id"),
+                rs.getLong("user_id"),
+                rs.getString("type"),
+                rs.getLong("amount"),
+                rs.getLong("balance_after"),
+                rs.getString("source"),
+                rs.getString("reference_id"),
+                rs.getObject("created_at", OffsetDateTime.class)), limit);
     }
 
     public List<LedgerEntry> findRecentLedger(long userId, int limit) {

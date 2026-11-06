@@ -26,6 +26,7 @@ docker compose up -d                      # PostgreSQL, Redis, Kafka
 | 퀴즈 선착순 (Redis Lua: 마감·중복·재고 원자 처리) | ✅ |
 | 당첨 → Kafka → 원장 멱등 반영 | ✅ |
 | 로컬 데모 데이터 / 데모 이벤트 자동 생성 | ✅ (`local` 프로필) |
+| 운영·인프라 검증 API (`/api/system/{info,whoami,ledger}`, `/api/events/system/{info,whoami}`) — Pod·DB·Redis·Kafka 상태, 원장 집계 | ✅ (`OPS_API_ENABLED=false` 로 끔) |
 | 인증 | ⏳ 임시 `X-User-Id` 헤더 (JWT 예정) |
 | 회원가입·로그인, 자산조회, 고객센터, 출석체크, 대기열 | ⏳ |
 | DLQ, 대사 배치, Testcontainers 통합 테스트 | ⏳ |
