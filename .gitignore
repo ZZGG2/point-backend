@@ -9,3 +9,5 @@ build/
 *.iml
 .DS_Store
 .env
+# VS Code(Java 확장) 빌드 출력
+bin/
