@@ -31,7 +31,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with: { image-ref: "app:${{ github.sha }}", severity: CRITICAL, exit-code: "1" }
       - name: AWS 인증 (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with: { role-to-assume: "${{ vars.AWS_ECR_ROLE_ARN }}", aws-region: ap-northeast-2 }
       - name: GCP 인증 (Workload Identity Federation)
         uses: google-github-actions/auth@v2
