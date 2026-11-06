@@ -246,11 +246,12 @@ components:
         code: { type: string }
         data:
           type: object
-          required: [eventId, open, remainingStock, participants, winners]
+          required: [eventId, open, remainingStock, rewardAmount, participants, winners]
           properties:
             eventId: { type: string }
             open: { type: boolean }
             remainingStock: { type: integer, format: int64 }
+            rewardAmount: { type: integer, format: int64, description: 당첨 시 지급 포인트 }
             participants: { type: integer, format: int64 }
             winners: { type: integer, format: int64 }
     InstanceInfo:

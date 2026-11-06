@@ -40,12 +40,14 @@ public class LocalEventAdminController {
     @GetMapping("/{eventId}/status")
     public ApiResponse<Map<String, Object>> status(@PathVariable String eventId) {
         String stock = redis.opsForValue().get(EventKeys.stock(eventId));
+        String amount = redis.opsForValue().get(EventKeys.amount(eventId));
         Long participants = redis.opsForSet().size(EventKeys.participants(eventId));
         Long winners = redis.opsForSet().size(EventKeys.winners(eventId));
         Map<String, Object> body = Map.of(
                 "eventId", eventId,
                 "open", stock != null,
                 "remainingStock", stock == null ? 0L : Long.parseLong(stock),
+                "rewardAmount", amount == null ? 0L : Long.parseLong(amount),
                 "participants", participants == null ? 0L : participants,
                 "winners", winners == null ? 0L : winners);
         return ApiResponse.of("OK", body, null);

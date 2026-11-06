@@ -1,0 +1,26 @@
+server:
+  port: 8081
+  shutdown: graceful
+spring:
+  application:
+    name: event-service
+  profiles:
+    default: local
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+app:
+  attendance:
+    reward-amount: ${ATTENDANCE_REWARD_AMOUNT:10}
+  ops:
+    enabled: ${OPS_API_ENABLED:true}   # /api/events/system/** 운영·인프라 검증 API (끄려면 false)
+management:
+  endpoints.web.exposure.include: health,info,prometheus
+  endpoint.health.probes.enabled: true
