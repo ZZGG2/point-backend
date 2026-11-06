@@ -1,0 +1,179 @@
+# Contract First: API 변경은 이 파일을 먼저 수정한다 (AGENTS.md 레포별 규칙)
+# 프론트는 이 파일로 타입을 생성한다: point-frontend `npm run gen:api`
+openapi: 3.0.3
+info:
+  title: Point Platform API
+  version: 0.1.0
+servers:
+  - url: https://api.CHANGE_ME_DOMAIN
+  - url: http://localhost:8080
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: 로그인 성공
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+  /api/points/balance:
+    get:
+      tags: [point]
+      parameters:
+        - $ref: "#/components/parameters/DevUserId"
+      responses:
+        "200":
+          description: 잔액
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BalanceResponse" }
+  /api/points/history:
+    get:
+      tags: [point]
+      parameters:
+        - $ref: "#/components/parameters/DevUserId"
+      responses:
+        "200":
+          description: 최근 거래 내역 20건
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HistoryResponse" }
+  /api/points/use:
+    post:
+      tags: [point]
+      parameters:
+        - $ref: "#/components/parameters/DevUserId"
+        - in: header
+          name: Idempotency-Key
+          required: true
+          description: "요청마다 새로 만든 UUID. 같은 키로 재요청하면 다시 차감하지 않는다 (사용자별로 구분, 최대 64자)"
+          schema: { type: string, format: uuid, maxLength: 64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UsePointRequest" }
+      responses:
+        "200": { description: 사용 완료 }
+        "400": { description: "Idempotency-Key 누락·형식 오류 (code=INVALID_REQUEST)" }
+        "409": { description: 잔액 부족 }
+  /api/events/{eventId}/answers:
+    post:
+      tags: [event]
+      parameters:
+        - { in: path, name: eventId, required: true, schema: { type: string } }
+        - $ref: "#/components/parameters/DevUserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QuizAnswerRequest" }
+      responses:
+        "202": { description: "당첨 (code=WON, 지급 예정 — 원장 반영은 비동기)", content: { application/json: { schema: { $ref: "#/components/schemas/ResultResponse" } } } }
+        "200": { description: "낙첨 (code=LOST)", content: { application/json: { schema: { $ref: "#/components/schemas/ResultResponse" } } } }
+        "409": { description: "중복 참여 (code=DUPLICATE)", content: { application/json: { schema: { $ref: "#/components/schemas/ResultResponse" } } } }
+        "410": { description: "이벤트 없음/마감 (code=CLOSED)", content: { application/json: { schema: { $ref: "#/components/schemas/ResultResponse" } } } }
+        "503": { $ref: "#/components/responses/EventUnavailable" }
+  /api/events/attendance:
+    post:
+      tags: [event]
+      summary: 출석체크 (KST 기준 1일 1회)
+      parameters:
+        - $ref: "#/components/parameters/DevUserId"
+      responses:
+        "202": { description: "출석 완료 (code=ATTENDED, 지급 예정 — 원장 반영은 비동기)", content: { application/json: { schema: { $ref: "#/components/schemas/AttendanceResponse" } } } }
+        "409": { description: "오늘 이미 출석 (code=ALREADY_ATTENDED)", content: { application/json: { schema: { $ref: "#/components/schemas/AttendanceResponse" } } } }
+        "503": { $ref: "#/components/responses/EventUnavailable" }
+    # TODO(#이슈): 나머지 API 명세 — point-infra docs/03-development/api-spec.md 기준
+components:
+  responses:
+    EventUnavailable:
+      description: |
+        이벤트 일시 불가. code 로 구분한다.
+        - EVENT_MAINTENANCE: DR 모드 점검 (Ingress 응답, ADR-0004)
+        - EVENT_RETRY: 보상 발행 실패. 참여 기록은 되돌려졌으므로 잠시 후 같은 요청을 다시 보내면 된다
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+  parameters:
+    DevUserId:
+      in: header
+      name: X-User-Id
+      required: true
+      description: "로컬 개발용 임시 사용자 식별 (TODO: JWT 도입 시 제거)"
+      schema: { type: integer, format: int64 }
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    LoginResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data:
+          type: object
+          properties:
+            accessToken: { type: string }
+    BalanceResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data:
+          type: object
+          properties:
+            balance: { type: integer, format: int64 }
+    UsePointRequest:
+      type: object
+      required: [amount, merchantRef]
+      properties:
+        amount: { type: integer, format: int64, minimum: 1 }
+        merchantRef: { type: string }
+    QuizAnswerRequest:
+      type: object
+      required: [answer]
+      properties:
+        answer: { type: string }
+    LedgerEntry:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        type: { type: string, enum: [EARN, USE, REFUND, EXPIRE, CANCEL] }
+        amount: { type: integer, format: int64 }
+        balanceAfter: { type: integer, format: int64 }
+        source: { type: string }
+        referenceId: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    HistoryResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/LedgerEntry" }
+    ResultResponse:
+      type: object
+      properties:
+        code: { type: string, enum: [WON, LOST, DUPLICATE, CLOSED] }
+    AttendanceResponse:
+      type: object
+      properties:
+        code: { type: string, enum: [ATTENDED, ALREADY_ATTENDED] }
+    ErrorResponse:
+      type: object
+      properties:
+        code: { type: string, example: EVENT_MAINTENANCE }
+        message: { type: string }

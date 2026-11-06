@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "point.reward.requested",
+  "description": "event-service → monolith(point). 하위 호환 변경만 허용 (필드 추가 OK, 삭제·이름 변경 금지)",
+  "type": "object",
+  "required": ["idempotencyKey", "userId", "eventId", "amount", "reason", "occurredAt"],
+  "properties": {
+    "idempotencyKey": { "type": "string", "description": "eventId:userId" },
+    "userId": { "type": "integer" },
+    "eventId": { "type": "string" },
+    "amount": { "type": "integer", "minimum": 1 },
+    "reason": { "type": "string", "enum": ["QUIZ_REWARD", "ATTENDANCE_REWARD"] },
+    "occurredAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

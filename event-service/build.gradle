@@ -1,0 +1,5 @@
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    // TODO(#이슈): JWT 자체 검증 도입 시 spring-boot-starter-oauth2-resource-server 로 교체
+}

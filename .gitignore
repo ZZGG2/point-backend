@@ -1,0 +1,11 @@
+CLAUDE.local.md
+.claude/settings.local.json
+build/
+.gradle/
+*.class
+!gradle/wrapper/gradle-wrapper.jar
+.idea/
+.vscode/
+*.iml
+.DS_Store
+.env

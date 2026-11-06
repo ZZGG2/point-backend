@@ -1,0 +1,65 @@
+name: ci-app
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write     # OIDC (AWS, GCP)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: gradle }
+      - run: ./gradlew test   # Testcontainers + ArchUnit
+
+  build-push:
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { module: [monolith, event-service] }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -f ${{ matrix.module }}/Dockerfile --build-arg MODULE=${{ matrix.module }} -t app:${{ github.sha }} .
+      - name: Trivy scan (CRITICAL 시 실패)
+        uses: aquasecurity/trivy-action@0.28.0
+        with: { image-ref: "app:${{ github.sha }}", severity: CRITICAL, exit-code: "1" }
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ vars.AWS_ECR_ROLE_ARN }}", aws-region: ap-northeast-2 }
+      - name: GCP 인증 (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_AR_SA }}
+      - name: 이중 푸시 — ECR + Artifact Registry (ADR-0010)
+        run: |
+          echo "TODO: docker tag/push → ECR, asia-northeast3-docker.pkg.dev/<project>/point-apps"
+
+  bump-infra:
+    # 배포 결정은 point-infra 에서 (ADR-0012). 이 레포는 태그 bump PR 만 생성한다.
+    if: github.ref == 'refs/heads/main'
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub App 토큰 (point-infra contents/pull-requests 권한만)
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.INFRA_BOT_APP_ID }}
+          private-key: ${{ secrets.INFRA_BOT_PRIVATE_KEY }}
+          repositories: point-infra
+      - uses: actions/checkout@v4
+        with: { repository: "${{ github.repository_owner }}/point-infra", token: "${{ steps.app.outputs.token }}" }
+      - name: 이미지 태그 bump PR 생성
+        env: { GH_TOKEN: "${{ steps.app.outputs.token }}" }
+        run: |
+          TAG="sha-${GITHUB_SHA::7}"
+          echo "TODO: kustomize edit set image (overlays/aws: monolith,event-service / overlays/gcp-dr: monolith) → $TAG"
+          echo "TODO: git switch -c chore/bump-backend-$TAG && commit && gh pr create --title 'chore(k8s): bump backend images to $TAG'"
