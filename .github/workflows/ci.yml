@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "21", cache: gradle }
       - run: ./gradlew test   # Testcontainers + ArchUnit
@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix: { module: [monolith, event-service] }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build image
         run: docker build -f ${{ matrix.module }}/Dockerfile --build-arg MODULE=${{ matrix.module }} -t app:${{ github.sha }} .
       - name: Trivy scan (CRITICAL 시 실패)
@@ -55,7 +55,7 @@ jobs:
           app-id: ${{ vars.INFRA_BOT_APP_ID }}
           private-key: ${{ secrets.INFRA_BOT_PRIVATE_KEY }}
           repositories: point-infra
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { repository: "${{ github.repository_owner }}/point-infra", token: "${{ steps.app.outputs.token }}" }
       - name: 이미지 태그 bump PR 생성
         env: { GH_TOKEN: "${{ steps.app.outputs.token }}" }
