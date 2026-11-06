@@ -63,9 +63,9 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/UsePointRequest" }
       responses:
-        "200": { description: 사용 완료 }
-        "400": { description: "Idempotency-Key 누락·형식 오류 (code=INVALID_REQUEST)" }
-        "409": { description: 잔액 부족 }
+        "200": { description: "사용 완료 (data.balance = 처리 후 잔액)", content: { application/json: { schema: { $ref: "#/components/schemas/BalanceResponse" } } } }
+        "400": { description: "Idempotency-Key 누락·형식 오류 (code=INVALID_REQUEST)", content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "409": { description: "잔액 부족 (code=INSUFFICIENT_BALANCE)", content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
   /api/events/{eventId}/answers:
     post:
       tags: [event]
@@ -92,6 +92,69 @@ paths:
       responses:
         "202": { description: "출석 완료 (code=ATTENDED, 지급 예정 — 원장 반영은 비동기)", content: { application/json: { schema: { $ref: "#/components/schemas/AttendanceResponse" } } } }
         "409": { description: "오늘 이미 출석 (code=ALREADY_ATTENDED)", content: { application/json: { schema: { $ref: "#/components/schemas/AttendanceResponse" } } } }
+        "503": { $ref: "#/components/responses/EventUnavailable" }
+  /api/events/{eventId}/status:
+    get:
+      tags: [event]
+      summary: "이벤트 현황 (local 프로필 전용 — 운영에서는 404)"
+      security: []
+      parameters:
+        - { in: path, name: eventId, required: true, schema: { type: string } }
+      responses:
+        "200": { description: 현황, content: { application/json: { schema: { $ref: "#/components/schemas/EventStatusResponse" } } } }
+  /api/events/{eventId}/open:
+    post:
+      tags: [event]
+      summary: "이벤트 열기/초기화 (local 프로필 전용)"
+      security: []
+      parameters:
+        - { in: path, name: eventId, required: true, schema: { type: string } }
+        - { in: query, name: stock, required: false, schema: { type: integer, format: int64, default: 3 } }
+        - { in: query, name: amount, required: false, schema: { type: integer, format: int64, default: 500 } }
+      responses:
+        "200": { description: 초기화 후 현황, content: { application/json: { schema: { $ref: "#/components/schemas/EventStatusResponse" } } } }
+  /api/system/info:
+    get:
+      tags: [ops]
+      summary: "monolith 인스턴스·DB·Kafka 상태 (운영/인프라 검증용, OPS_API_ENABLED=false 면 비활성)"
+      security: []
+      responses:
+        "200":
+          description: "구성요소가 죽어 있어도 200 — 각 status(UP/DOWN/DISABLED) 로 구분"
+          content: { application/json: { schema: { $ref: "#/components/schemas/MonolithSystemInfoResponse" } } }
+  /api/system/whoami:
+    get:
+      tags: [ops]
+      summary: "응답한 monolith 인스턴스 정보만 (부하 분산 확인용, 외부 점검 없음)"
+      security: []
+      responses:
+        "200": { description: 인스턴스, content: { application/json: { schema: { $ref: "#/components/schemas/InstanceInfoResponse" } } } }
+  /api/events/system/whoami:
+    get:
+      tags: [ops]
+      summary: "응답한 event-service 인스턴스 정보만 (부하 분산 확인용, 외부 점검 없음)"
+      security: []
+      responses:
+        "200": { description: 인스턴스, content: { application/json: { schema: { $ref: "#/components/schemas/InstanceInfoResponse" } } } }
+        "503": { $ref: "#/components/responses/EventUnavailable" }
+  /api/system/ledger:
+    get:
+      tags: [ops]
+      summary: "원장 집계 + 전체 사용자 최근 활동 (운영/인프라 검증용)"
+      security: []
+      parameters:
+        - { in: query, name: recent, required: false, schema: { type: integer, minimum: 1, maximum: 50, default: 15 } }
+      responses:
+        "200": { description: 집계, content: { application/json: { schema: { $ref: "#/components/schemas/LedgerStatsResponse" } } } }
+  /api/events/system/info:
+    get:
+      tags: [ops]
+      summary: "event-service 인스턴스·Redis·Kafka 상태 (ALB 경로 라우팅을 그대로 탐 / DR 모드에서는 503 EVENT_MAINTENANCE)"
+      security: []
+      responses:
+        "200":
+          description: "구성요소가 죽어 있어도 200 — 각 status 로 구분"
+          content: { application/json: { schema: { $ref: "#/components/schemas/EventSystemInfoResponse" } } }
         "503": { $ref: "#/components/responses/EventUnavailable" }
     # TODO(#이슈): 나머지 API 명세 — point-infra docs/03-development/api-spec.md 기준
 components:
@@ -177,3 +240,106 @@ components:
       properties:
         code: { type: string, example: EVENT_MAINTENANCE }
         message: { type: string }
+    EventStatusResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data:
+          type: object
+          required: [eventId, open, remainingStock, participants, winners]
+          properties:
+            eventId: { type: string }
+            open: { type: boolean }
+            remainingStock: { type: integer, format: int64 }
+            participants: { type: integer, format: int64 }
+            winners: { type: integer, format: int64 }
+    InstanceInfo:
+      type: object
+      required: [service, instance, profiles, drMode, kafkaEnabled, startedAt, uptimeSeconds, javaVersion]
+      properties:
+        service: { type: string, example: monolith }
+        instance: { type: string, description: "응답한 인스턴스 (K8s 에서는 Pod 이름)" }
+        profiles: { type: array, items: { type: string } }
+        drMode: { type: boolean }
+        kafkaEnabled: { type: boolean }
+        startedAt: { type: string, format: date-time }
+        uptimeSeconds: { type: integer, format: int64 }
+        javaVersion: { type: string }
+    InstanceInfoResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data: { $ref: "#/components/schemas/InstanceInfo" }
+    ComponentStatus:
+      type: object
+      required: [status, details]
+      properties:
+        status: { type: string, enum: [UP, DOWN, DISABLED] }
+        latencyMs: { type: integer, format: int64, nullable: true }
+        details:
+          type: object
+          additionalProperties: true
+          description: |
+            구성요소별 정보.
+            database: version, database, serverAddress, inRecovery, heartbeatAt, heartbeatLagSeconds
+            redis: ping, pingMs, version, mode, role, connectedClients, usedMemory, keys
+            kafka(monolith): clusterId, brokers, topic, consumerGroup, assignedPartitions, consumerLag
+            kafka(event-service): clusterId, brokers, topic, topicExists, partitions, publishedOffsetTotal
+        error: { type: string, nullable: true }
+    MonolithSystemInfoResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data:
+          type: object
+          required: [instance, database, kafka]
+          properties:
+            instance: { $ref: "#/components/schemas/InstanceInfo" }
+            database: { $ref: "#/components/schemas/ComponentStatus" }
+            kafka: { $ref: "#/components/schemas/ComponentStatus" }
+    EventSystemInfoResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data:
+          type: object
+          required: [instance, redis, kafka]
+          properties:
+            instance: { $ref: "#/components/schemas/InstanceInfo" }
+            redis: { $ref: "#/components/schemas/ComponentStatus" }
+            kafka: { $ref: "#/components/schemas/ComponentStatus" }
+    LedgerActivity:
+      type: object
+      required: [id, userId, type, amount, balanceAfter, source, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        userId: { type: integer, format: int64 }
+        type: { type: string }
+        amount: { type: integer, format: int64 }
+        balanceAfter: { type: integer, format: int64 }
+        source: { type: string }
+        referenceId: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    LedgerStatsResponse:
+      type: object
+      properties:
+        code: { type: string }
+        data:
+          type: object
+          required: [walletCount, totalBalance, ledgerCount, bySource, recent]
+          properties:
+            walletCount: { type: integer, format: int64 }
+            totalBalance: { type: integer, format: int64 }
+            ledgerCount: { type: integer, format: int64 }
+            bySource:
+              type: array
+              items:
+                type: object
+                required: [source, type, count, totalAmount]
+                properties:
+                  source: { type: string }
+                  type: { type: string }
+                  count: { type: integer, format: int64 }
+                  totalAmount: { type: integer, format: int64 }
+            lastEventRewardAt: { type: string, format: date-time, nullable: true }
+            recent: { type: array, items: { $ref: "#/components/schemas/LedgerActivity" } }

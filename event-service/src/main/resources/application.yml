@@ -19,6 +19,8 @@ spring:
 app:
   attendance:
     reward-amount: ${ATTENDANCE_REWARD_AMOUNT:10}
+  ops:
+    enabled: ${OPS_API_ENABLED:true}   # /api/events/system/** 운영·인프라 검증 API (끄려면 false)
 management:
   endpoints.web.exposure.include: health,info,prometheus
   endpoint.health.probes.enabled: true

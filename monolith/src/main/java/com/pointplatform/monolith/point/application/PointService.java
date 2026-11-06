@@ -36,6 +36,18 @@ public class PointService {
         return repository.findRecentLedger(userId, 20);
     }
 
+    /** 운영 대시보드용 원장 집계 + 전체 사용자 최근 활동 (읽기 전용) */
+    @Transactional(readOnly = true)
+    public PointStats getStats(int recentLimit) {
+        return new PointStats(
+                repository.countWallets(),
+                repository.sumBalances(),
+                repository.countLedger(),
+                repository.summarizeBySource(),
+                repository.findLastCreatedAtBySource("EVENT").orElse(null),
+                repository.findRecentActivity(Math.max(1, Math.min(recentLimit, 50))));
+    }
+
     /** 적립 (이벤트 보상 등). @return 처리 후 잔액 */
     @Transactional
     public long earn(long userId, long amount, String idempotencyKey, String source, String referenceId) {
