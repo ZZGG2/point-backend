@@ -1,6 +1,0 @@
-*                                    @CHANGE_ME_ORG/backend
-/api/                                @CHANGE_ME_ORG/backend @CHANGE_ME_ORG/frontend
-/monolith/src/main/resources/db/     @CHANGE_ME_ORG/backend @CHANGE_ME_ORG/infra
-/**/Dockerfile                       @CHANGE_ME_ORG/backend @CHANGE_ME_ORG/infra
-/.github/workflows/                  @CHANGE_ME_ORG/infra
-/AGENTS.md                           @CHANGE_ME_ORG/all

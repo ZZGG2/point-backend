@@ -9,7 +9,6 @@
 
 - 설계 문서·ADR: [point-infra/docs](https://github.com/CHANGE_ME_ORG/point-infra/tree/main/docs)
 - API 계약: [`api/openapi.yaml`](api/openapi.yaml) · Kafka 스키마: [`api/events/`](api/events/)
-- 작업 규칙: **[AGENTS.md](AGENTS.md)** (사람·AI 공통), [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## 로컬 실행
 상세 가이드 (Windows, 데모 시나리오 포함): 상위 폴더의 `LOCAL-DEV.md`
