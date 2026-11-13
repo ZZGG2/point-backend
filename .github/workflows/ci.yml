@@ -28,12 +28,15 @@ jobs:
       - name: Build image
         run: docker build -f ${{ matrix.module }}/Dockerfile --build-arg MODULE=${{ matrix.module }} -t app:${{ github.sha }} .
       - name: Trivy scan (CRITICAL 시 실패)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0 (커밋 SHA 고정: 태그 변조 대비)
         with: { image-ref: "app:${{ github.sha }}", severity: CRITICAL, exit-code: "1" }
+      # 클라우드 변수(GitHub Variables)가 설정되기 전에는 인증·푸시를 건너뛴다 (빌드·스캔만 검증)
       - name: AWS 인증 (OIDC)
+        if: vars.AWS_ECR_ROLE_ARN != ''
         uses: aws-actions/configure-aws-credentials@v4
         with: { role-to-assume: "${{ vars.AWS_ECR_ROLE_ARN }}", aws-region: ap-northeast-2 }
       - name: GCP 인증 (Workload Identity Federation)
+        if: vars.GCP_WIF_PROVIDER != ''
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
@@ -44,7 +47,7 @@ jobs:
 
   bump-infra:
     # 배포 결정은 point-infra 에서 (ADR-0012). 이 레포는 태그 bump PR 만 생성한다.
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.INFRA_BOT_APP_ID != ''   # GitHub App 설정 전에는 건너뜀
     needs: build-push
     runs-on: ubuntu-latest
     steps:
