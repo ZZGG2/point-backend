@@ -12,8 +12,8 @@ import java.util.Arrays;
 
 /**
  * 운영/인프라 검증용 읽기 전용 API (프론트 "시스템 상태" 화면).
- * 경로를 /api/events 아래에 둔 이유: ALB/Ingress 경로 라우팅(/api/events/** → event-service)을 그대로 타게 해서
- * "라우팅이 맞게 되어 있는지"까지 함께 검증하기 위함. DR 모드에서는 Ingress 가 503(EVENT_MAINTENANCE)을 준다.
+ * 경로를 /api/events 아래에 둔 이유: ALB/Gateway(HTTPRoute) 경로 라우팅(/api/events/** → event-service)을 그대로 타게 해서
+ * "라우팅이 맞게 되어 있는지"까지 함께 검증하기 위함. DR 모드에서는 Gateway 가 maintenance 로 라우팅해 503(EVENT_MAINTENANCE)을 준다.
  * 운영에서 끄려면 OPS_API_ENABLED=false.
  * TODO(#이슈): JWT 도입 시 관리자 권한으로 제한
  */

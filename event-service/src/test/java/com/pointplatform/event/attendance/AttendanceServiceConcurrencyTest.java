@@ -45,6 +45,17 @@ class AttendanceServiceConcurrencyTest extends RedisTestSupport {
     }
 
     @Test
+    void 상한을_넘는_userId_는_비트맵을_만들지_않고_거부한다() {
+        assertThatThrownBy(() -> service.check(AttendanceService.MAX_USER_ID + 1))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.check(4_294_967_295L))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(redis.hasKey(EventKeys.attendance("20261107"))).isFalse();
+        verify(publisher, times(0)).publishAttendanceReward(anyString(), anyLong(), anyLong());
+    }
+
+    @Test
     void 날짜는_KST_기준이고_키에_TTL이_걸린다() {
         service.check(7L);
 

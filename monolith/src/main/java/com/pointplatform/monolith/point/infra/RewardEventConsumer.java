@@ -30,6 +30,12 @@ public class RewardEventConsumer {
     @KafkaListener(topics = "point.reward.requested", groupId = "point-ledger")
     public void consume(String payload) throws Exception {
         RewardRequested event = objectMapper.readValue(payload, RewardRequested.class);
+        // 비정상 메시지는 원장을 오염시키지 않고 재시도 없이 DLQ 로 (IllegalArgumentException = 비재시도, RewardConsumerErrorConfig)
+        if (event == null || event.userId() <= 0 || event.amount() <= 0
+                || event.idempotencyKey() == null || event.idempotencyKey().isBlank()
+                || event.eventId() == null || event.eventId().isBlank()) {
+            throw new IllegalArgumentException("Invalid reward event: " + event);
+        }
         long balance = pointService.earn(event.userId(), event.amount(), event.idempotencyKey(),
                 "EVENT", event.eventId());
         log.info("reward applied key={} user={} amount={} balance={}",

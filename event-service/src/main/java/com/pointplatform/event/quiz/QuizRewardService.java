@@ -38,6 +38,9 @@ public class QuizRewardService {
     }
 
     public ClaimResult submit(String eventId, long userId, String answer) {
+        if (userId <= 0) {
+            throw new IllegalArgumentException("userId must be positive");
+        }
         // TODO(#이슈): 정답 검증 (event:{id}:answer). 현재는 제출만 하면 참여로 간주
         List<String> keys = List.of(
                 EventKeys.participants(eventId), EventKeys.stock(eventId), EventKeys.winners(eventId));

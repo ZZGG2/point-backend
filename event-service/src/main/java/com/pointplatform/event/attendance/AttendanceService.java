@@ -27,6 +27,8 @@ public class AttendanceService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DAY = DateTimeFormatter.BASIC_ISO_DATE; // yyyyMMdd
     private static final Duration TTL = Duration.ofDays(2);
+    /** SETBIT offset = userId 이므로 상한이 없으면 큰 값 하나로 비트맵이 최대 512MB 까지 커진다 (2^32 이상은 Redis 에러) */
+    static final long MAX_USER_ID = 10_000_000L;
 
     private final StringRedisTemplate redis;
     private final RewardPublisher rewardPublisher;
@@ -42,8 +44,8 @@ public class AttendanceService {
     }
 
     public AttendanceResult check(long userId) {
-        if (userId <= 0) {
-            throw new IllegalArgumentException("userId must be positive");
+        if (userId <= 0 || userId > MAX_USER_ID) {
+            throw new IllegalArgumentException("invalid userId: " + userId);
         }
         String day = LocalDate.ofInstant(clock.instant(), KST).format(DAY);
         String key = EventKeys.attendance(day);

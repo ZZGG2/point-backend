@@ -162,7 +162,7 @@ components:
     EventUnavailable:
       description: |
         이벤트 일시 불가. code 로 구분한다.
-        - EVENT_MAINTENANCE: DR 모드 점검 (Ingress 응답, ADR-0004)
+        - EVENT_MAINTENANCE: DR 모드 점검 (Gateway → maintenance 응답, ADR-0004·0014)
         - EVENT_RETRY: 보상 발행 실패. 참여 기록은 되돌려졌으므로 잠시 후 같은 요청을 다시 보내면 된다
       content:
         application/json:

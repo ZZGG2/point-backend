@@ -7,7 +7,7 @@
 | `monolith` | user / asset / point / cs | 8080 | ✅ |
 | `event-service` | 출석·퀴즈·대기열 (Redis + Kafka) | 8081 | ❌ (DR 시 점검) |
 
-- 설계 문서·ADR: [point-infra/docs](https://github.com/CHANGE_ME_ORG/point-infra/tree/main/docs)
+- 설계 문서·ADR: [point-infra/docs](https://github.com/ZZGG2/point-infra/tree/main/docs)
 - API 계약: [`api/openapi.yaml`](api/openapi.yaml) · Kafka 스키마: [`api/events/`](api/events/)
 
 ## 로컬 실행
