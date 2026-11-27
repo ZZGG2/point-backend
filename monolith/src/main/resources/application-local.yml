@@ -1,9 +1,0 @@
-# 로컬 전용: 데모 사용자/잔액 시드 데이터 추가 (운영 환경에는 적용되지 않음)
-spring:
-  flyway:
-    locations: classpath:db/migration,classpath:db/local
-app:
-  auth:
-    cookie-secure: false   # 로컬은 http 라서 Secure 쿠키를 쓸 수 없다
-  admin:
-    api-token: local-admin-token   # 로컬 전용 (make settle 에서 사용)

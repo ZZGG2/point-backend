@@ -1,5 +1,6 @@
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    // JWT 자체 검증 (monolith 공개키) — 이벤트 피크에도 monolith 를 호출하지 않는다 (hybrid-msa.md §4)
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    // JWT 자체 검증 (core-service 공개키) — 이벤트 피크에도 core-service 를 호출하지 않는다 (hybrid-msa.md §4)
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test'   // Boot 4: @WebMvcTest 슬라이스에 보안 설정을 붙이는 모듈
 }

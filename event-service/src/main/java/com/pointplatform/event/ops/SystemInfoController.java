@@ -25,12 +25,10 @@ public class SystemInfoController {
     private static final Duration PROBE_TIMEOUT = Duration.ofSeconds(3);
 
     private final RedisProbe redisProbe;
-    private final KafkaProbe kafkaProbe;
     private final Environment environment;
 
-    public SystemInfoController(RedisProbe redisProbe, KafkaProbe kafkaProbe, Environment environment) {
+    public SystemInfoController(RedisProbe redisProbe, Environment environment) {
         this.redisProbe = redisProbe;
-        this.kafkaProbe = kafkaProbe;
         this.environment = environment;
     }
 
@@ -44,11 +42,10 @@ public class SystemInfoController {
     public ApiResponse<SystemInfo> info() {
         InstanceInfo instance = instance();
         ComponentStatus redis = Probes.run(PROBE_TIMEOUT, redisProbe::check);
-        ComponentStatus kafka = Probes.run(PROBE_TIMEOUT, kafkaProbe::check);
-        return ApiResponse.of("OK", new SystemInfo(instance, redis, kafka), null);
+        return ApiResponse.of("OK", new SystemInfo(instance, redis), null);
     }
 
-    /** event-service 는 DR 대상이 아니고(ADR-0004) Kafka 없이는 보상을 발행할 수 없으므로 항상 drMode=false, kafkaEnabled=true */
+    /** event-service 는 DR 대상이 아니고(ADR-0004) 판정과 보상 기록이 같은 Redis 라 항상 drMode=false, rewardStreamEnabled=true */
     private InstanceInfo instance() {
         // 활성 프로필이 없으면 spring.profiles.default(local) 로 동작 중이므로 그것을 보여준다
         String[] profiles = environment.getActiveProfiles().length > 0
@@ -56,5 +53,5 @@ public class SystemInfoController {
         return InstanceInfo.current("event-service", Arrays.asList(profiles), false, true);
     }
 
-    public record SystemInfo(InstanceInfo instance, ComponentStatus redis, ComponentStatus kafka) {}
+    public record SystemInfo(InstanceInfo instance, ComponentStatus redis) {}
 }

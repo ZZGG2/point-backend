@@ -16,12 +16,12 @@ public record InstanceInfo(
         String instance,
         List<String> profiles,
         boolean drMode,
-        boolean kafkaEnabled,
+        boolean rewardStreamEnabled,
         OffsetDateTime startedAt,
         long uptimeSeconds,
         String javaVersion) {
 
-    static InstanceInfo current(String service, List<String> profiles, boolean drMode, boolean kafkaEnabled) {
+    static InstanceInfo current(String service, List<String> profiles, boolean drMode, boolean rewardStreamEnabled) {
         long startMillis = ManagementFactory.getRuntimeMXBean().getStartTime();
         long uptimeMillis = ManagementFactory.getRuntimeMXBean().getUptime();
         return new InstanceInfo(
@@ -29,7 +29,7 @@ public record InstanceInfo(
                 hostname(),
                 profiles,
                 drMode,
-                kafkaEnabled,
+                rewardStreamEnabled,
                 OffsetDateTime.ofInstant(Instant.ofEpochMilli(startMillis), ZoneOffset.UTC),
                 uptimeMillis / 1000,
                 System.getProperty("java.version"));

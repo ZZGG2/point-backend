@@ -14,7 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
-/** {@link LoginUser} 처리: 검증된 JWT 의 sub(사용자 id)를 long 으로 넘긴다 (monolith 와 동일) */
+/** {@link LoginUser} 처리: 검증된 JWT 의 sub(사용자 id)를 long 으로 넘긴다 (core-service 와 동일) */
 @Configuration
 public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver, WebMvcConfigurer {
 
@@ -37,7 +37,7 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver,
             try {
                 return Long.parseLong(token.getName());
             } catch (NumberFormatException ignored) {
-                // sub 가 숫자가 아니면 monolith 가 발급한 토큰이 아니다
+                // sub 가 숫자가 아니면 core-service 가 발급한 토큰이 아니다
             }
         }
         throw new AuthenticationCredentialsNotFoundException("login user not found");

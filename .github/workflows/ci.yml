@@ -22,7 +22,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     strategy:
-      matrix: { module: [monolith, event-service] }
+      matrix: { module: [core-service, event-service] }
     steps:
       - uses: actions/checkout@v7
       - name: Build image
@@ -64,5 +64,5 @@ jobs:
         env: { GH_TOKEN: "${{ steps.app.outputs.token }}" }
         run: |
           TAG="sha-${GITHUB_SHA::7}"
-          echo "TODO: kustomize edit set image (overlays/aws: monolith,event-service / overlays/gcp-dr: monolith) → $TAG"
+          echo "TODO: kustomize edit set image (overlays/aws: core-service,event-service / overlays/gcp-dr: core-service) → $TAG"
           echo "TODO: git switch -c chore/bump-backend-$TAG && commit && gh pr create --title 'chore(k8s): bump backend images to $TAG'"

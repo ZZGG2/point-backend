@@ -3,7 +3,7 @@ package com.pointplatform.event.ops;
 import java.util.Map;
 
 /**
- * 외부 구성요소 점검 결과 (Redis, Kafka).
+ * 외부 구성요소 점검 결과 (Redis).
  * 점검이 실패해도 API 자체는 200 으로 응답하고 status 로 구분한다 → 대시보드가 "어디가 죽었는지" 그릴 수 있다.
  *
  * @param status    UP / DOWN / DISABLED

@@ -5,4 +5,4 @@ pluginManagement {
     }
 }
 rootProject.name = 'point-backend'
-include 'monolith', 'event-service'
+include 'core-service', 'event-service'

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "point.reward.requested",
-  "description": "event-service → monolith(point). 하위 호환 변경만 허용 (필드 추가 OK, 삭제·이름 변경 금지)",
+  "description": "보상 Stream(event:{id}:rewards, attendance:{yyyyMMdd}:rewards) 항목 필드. event-service Lua → core-service(point) consumer group point-ledger (ADR-0019). Redis Stream 은 값을 문자열로 저장하므로 숫자 필드는 숫자 문자열로 온다. 하위 호환 변경만 허용 (필드 추가 OK, 삭제·이름 변경 금지)",
   "type": "object",
   "required": ["idempotencyKey", "userId", "eventId", "amount", "reason", "occurredAt"],
   "properties": {

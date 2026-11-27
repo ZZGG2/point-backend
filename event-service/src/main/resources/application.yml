@@ -10,22 +10,18 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
-    producer:
-      acks: all
-      properties:
-        enable.idempotence: true
 app:
   attendance:
     reward-amount: ${ATTENDANCE_REWARD_AMOUNT:10}
+  admin:
+    api-token: ${ADMIN_API_TOKEN:}   # 이벤트 생성 API(X-Admin-Token). 비우면 관리자 API 는 항상 403
   ops:
     enabled: ${OPS_API_ENABLED:true}   # /api/events/system/** 운영·인프라 검증 API (끄려면 false)
   auth:
-    # monolith 서명 키의 공개키 (X.509 PEM). 둘 중 하나는 반드시 설정 — 없으면 기동 실패
+    # core-service 서명 키의 공개키 (X.509 PEM). 둘 중 하나는 반드시 설정 — 없으면 기동 실패
     public-key: ${JWT_PUBLIC_KEY:}
     jwk-set-uri: ${JWT_JWK_SET_URI:}
-    issuer: ${JWT_ISSUER:point-monolith}
+    issuer: ${JWT_ISSUER:point-core}
 management:
   endpoints.web.exposure.include: health,info,prometheus
   endpoint.health.probes.enabled: true

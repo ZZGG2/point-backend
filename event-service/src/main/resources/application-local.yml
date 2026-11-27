@@ -1,5 +1,5 @@
-# 로컬 전용: 공개키 대신 monolith 의 JWKS 로 검증 (monolith 가 임시 키로 서명하므로)
-# monolith 를 다른 포트로 띄웠다면 JWT_JWK_SET_URI 로 바꾼다
+# 로컬 전용: 공개키 대신 core-service 의 JWKS 로 검증 (core-service 가 임시 키로 서명하므로)
+# core-service 를 다른 포트로 띄웠다면 JWT_JWK_SET_URI 로 바꾼다
 app:
   auth:
     jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8080/api/auth/jwks.json}

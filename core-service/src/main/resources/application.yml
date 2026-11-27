@@ -1,0 +1,36 @@
+server:
+  port: 8080
+  shutdown: graceful
+spring:
+  application:
+    name: core-service
+  profiles:
+    default: local          # K8s 에서는 SPRING_PROFILES_ACTIVE=aws / gcp-dr
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/point}
+    username: ${DB_USERNAME:app_rw}
+    password: ${DB_PASSWORD:app_rw}
+  flyway:
+    enabled: true
+  data:
+    redis:   # 원장 반영 Stream (event-service 와 같은 ElastiCache, ADR-0019). 연결은 첫 사용 때 맺는다
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+app:
+  reward-stream:
+    enabled: ${REWARD_STREAM_ENABLED:true}   # gcp-dr 환경에서는 false (DR 에는 Redis 가 없다, ADR-0004)
+  dr-mode: ${DR_MODE:false}
+  ops:
+    enabled: ${OPS_API_ENABLED:true}   # /api/system/** 운영·인프라 검증 API (끄려면 false)
+  auth:
+    # RS256 서명 키 (PKCS#8 PEM). 운영은 Secrets Manager → External Secrets 로 주입.
+    # local 프로필에서 비어 있으면 기동 시 임시 키를 만든다 (재시작하면 기존 토큰은 무효)
+    private-key: ${JWT_PRIVATE_KEY:}
+    issuer: ${JWT_ISSUER:point-core}
+    access-token-ttl: ${JWT_ACCESS_TTL:15m}
+    refresh-token-ttl: ${JWT_REFRESH_TTL:14d}
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}
+management:
+  endpoints.web.exposure.include: health,info,prometheus
+  endpoint.health.probes.enabled: true
+  health.redis.enabled: ${REWARD_STREAM_ENABLED:true}   # DR 에서 Redis 없음으로 /actuator/health 가 DOWN 이 되지 않게

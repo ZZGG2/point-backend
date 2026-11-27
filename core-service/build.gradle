@@ -1,0 +1,11 @@
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'   // 원장 반영 Stream consumer (ADR-0019)
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'   // JWT 발급(Nimbus) + 검증
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test'   // Boot 4: @WebMvcTest 슬라이스에 보안 설정을 붙이는 모듈
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'   // Boot 4: flyway-core 만으로는 자동 설정이 붙지 않는다
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.5.1'
+}

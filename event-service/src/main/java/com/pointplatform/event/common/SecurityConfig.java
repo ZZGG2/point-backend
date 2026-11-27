@@ -1,6 +1,6 @@
 package com.pointplatform.event.common;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +22,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPublicKey;
 
 /**
- * JWT 자체 검증 (monolith 가 RS256 으로 서명, hybrid-msa.md §4) — 요청마다 monolith 를 호출하지 않는다.
+ * JWT 자체 검증 (core-service 가 RS256 으로 서명, hybrid-msa.md §4) — 요청마다 core-service 를 호출하지 않는다.
  * <ul>
  *   <li>운영: app.auth.public-key (JWT_PUBLIC_KEY, X.509 PEM)</li>
- *   <li>local: app.auth.jwk-set-uri → monolith /api/auth/jwks.json (임시 키, 받아온 키는 캐시)</li>
+ *   <li>local: app.auth.jwk-set-uri → core-service /api/auth/jwks.json (임시 키, 받아온 키는 캐시)</li>
  * </ul>
- * 공개 경로: 운영 검증 API, local 전용 이벤트 현황/열기, actuator.
+ * 공개 경로: 운영 검증 API, 이벤트 현황, local 전용 이벤트 열기, actuator.
+ * 관리자 경로(/api/events/admin/**)는 JWT 대신 X-Admin-Token 으로 확인한다 (AdminApiGuard).
  */
 @Configuration
 public class SecurityConfig {
@@ -46,8 +47,10 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/events/system/**", "/actuator/**", "/error").permitAll()
+                        .requestMatchers("/api/events/admin/**").permitAll()   // AdminApiGuard 가 토큰 확인
+                        .requestMatchers("/api/events/*/status").permitAll()
                         // LocalEventAdminController (@Profile("local")) — 운영에는 핸들러가 없어 404
-                        .requestMatchers("/api/events/*/status", "/api/events/*/open").permitAll()
+                        .requestMatchers("/api/events/*/open").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()).authenticationEntryPoint(unauthorized))
                 .exceptionHandling(e -> e.authenticationEntryPoint(unauthorized))
